@@ -12,12 +12,14 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     Optional<Student> findByRollNumber(String rollNumber);
     List<Student> findByClassId(String classId);
 
+    // CAST(:p AS String) forces Hibernate to bind null String parameters as
+    // VARCHAR (otherwise PostgreSQL infers `bytea` and `lower()` blows up).
     @Query("""
             SELECT s FROM Student s
-            WHERE (:classId IS NULL OR s.classId = :classId)
-              AND (:q IS NULL OR LOWER(s.firstName) LIKE LOWER(CONCAT('%', :q, '%'))
-                              OR LOWER(s.lastName)  LIKE LOWER(CONCAT('%', :q, '%'))
-                              OR LOWER(s.rollNumber) LIKE LOWER(CONCAT('%', :q, '%')))
+            WHERE (CAST(:classId AS String) IS NULL OR s.classId = :classId)
+              AND (CAST(:q AS String) IS NULL OR LOWER(s.firstName)  LIKE LOWER(CONCAT('%', CAST(:q AS String), '%'))
+                                              OR LOWER(s.lastName)   LIKE LOWER(CONCAT('%', CAST(:q AS String), '%'))
+                                              OR LOWER(s.rollNumber) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')))
             ORDER BY s.rollNumber
             """)
     List<Student> search(String classId, String q);
